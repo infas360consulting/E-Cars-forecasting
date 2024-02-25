@@ -4,8 +4,14 @@ options(scipen = 100)
 library(ggplot2)
 library(dplyr)
 library(assert)
+library(openxlsx)
+library(tidyverse)
+library(ggcorrplot)
 
 # functions
+data_view <- function(columns, df) {
+  View(df[, tolower(c("plz", columns))])
+}
 
 # Calculates most frequent values in a column
 modus <- function(x) {
@@ -30,7 +36,37 @@ plz2017 <- read.csv("./Datasets/PLZ_2017.csv", sep = ";", encoding = "latin1")
 
 dim(plz2017)
 
-# Data quality check
+# Data quality check matrix
 
 DataQuality2017 <- data_quality(df = plz2017[, -c(1,2)])
+
+# Correlation analysis between different years of target variable
+
+ecars <- lapply(paste("./Datasets/PLZ_", 2017:2021,".csv", sep = ""), function(x) as.data.frame(read.csv(x, sep = ";", encoding = "latin1")[, c("plz", "plz5_kba_kraft3")]))
+ecars <- ecars %>% reduce(left_join, by = "plz")
+names(ecars)[-1] <- paste("plz5_kba_kraft3_", 2017:2021, sep = "")
+
+correlation_matrix <- cor(ecars[, names(ecars) != "plz"])
+
+p_corr <- ggcorrplot(correlation_matrix)
+p_corr
+# Time series analysis of the target variable
+
+ecars <- lapply(2017:2021, FUN=function(x) data.frame(read.csv(paste("./Datasets/PLZ_", x, ".csv", sep = ""), sep = ";", encoding = "latin1")[, c("plz","plz5_kba_kraft3")], jahr=x))
+ecars <- do.call(rbind.data.frame, ecars)
+ecars$jahr <- factor(ecars$jahr, levels = as.character(2017:2021))
+ecars$plz <- factor(ecars$plz)
+
+# Boxplot ecars selling numbers trough time
+
+p1 <- ggplot(data = na.omit(ecars[ecars$plz5_kba_kraft3 <= 20000, ]), aes(x=jahr, y=plz5_kba_kraft3)) + geom_boxplot()
+p1
+
+# Number of sold ecars accross different zipcodes
+
+p2 <- ggplot(data = na.omit(ecars[substr(ecars$plz,1,2) =="81", ]), aes(y=plz5_kba_kraft3, x=jahr, col=plz, group = plz)) + geom_line() +
+  xlab("Jahr") + ylab("Bestand nach Kraftstoffart - Elektro und (Benzin- und Diesel-)Hybrid")
+p2
+# Data View
+data_view("plz5_flaeche", df=plz2017)
 
