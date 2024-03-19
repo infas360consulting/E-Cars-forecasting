@@ -50,3 +50,6 @@ rsconnect/
 
 # infas360 Datasets
 Datasets/
+
+# DS_Store
+.DS_Store
