@@ -31,6 +31,10 @@ data_quality <- function(df) {
 # Loading Data
 
 plz2017 <- read.csv("./Datasets/PLZ_2017.csv", sep = ";", encoding = "latin1")
+plz2018 <- read.csv("./Datasets/PLZ_2018.csv", sep = ";", encoding = "latin1")
+plz2019 <- read.csv("./Datasets/PLZ_2019.csv", sep = ";", encoding = "latin1")
+plz2020 <- read.csv("./Datasets/PLZ_2020.csv", sep = ";", encoding = "latin1")
+plz2021 <- read.csv("./Datasets/PLZ_2021.csv", sep = ";", encoding = "latin1")
 
 # Dimensions of data
 
@@ -68,5 +72,5 @@ p2 <- ggplot(data = na.omit(ecars[substr(ecars$plz,1,2) =="81", ]), aes(y=plz5_k
   xlab("Jahr") + ylab("Bestand nach Kraftstoffart - Elektro und (Benzin- und Diesel-)Hybrid")
 p2
 # Data View
-data_view("plz5_flaeche", df=plz2017)
+data_view(c("plz5_soz_sch4", "plz5_ew"), df=plz2021)
 
