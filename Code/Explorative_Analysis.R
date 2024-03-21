@@ -74,7 +74,9 @@ model_sampler <- function(covariates = columns.wappelhorst, target = "plz5_kba_k
 # First explorative analysis
 
 # fit 30 different poisson models of different size
-
-size.steps <- seq(from = 5, to = 30, by =  5)
+model.size.start <- 5
+model.size.end <- 30
+model.size.steps <- 5
+size.steps <- seq(from = model.size.start, to = model.size.end, by =  model.size.steps)
 sample.matrix <- cbind(size.steps, rep(5, length(size.steps)))
 poisson.models <- model_sampler(sample.matrix = sample.matrix, data = plz2017)
