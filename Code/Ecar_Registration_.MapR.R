@@ -21,10 +21,16 @@ postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")
 get_mapping_data <- function(data, postcodes.shape = postcodes
                              , fill = c("plz5_kba", "plz5_kba_kraft3")) {
   
+  if (any(data$Jahr %in% 2017:2020)) {
+    unifed.postcodes <- st_union(postcodes.shape[postcodes.shape$plz %in% c("81248", "81249"), ])
+    postcodes.shape[postcodes.shape$plz == "81249", "geometry"] <- st_multipolygon(unifed.postcodes)
+  }
+  
   data[, "plz"] <- as.character(data[, "plz"])
   data <- data[, c("plz", "plz5_ew", "ort", fill)]
-  left_join(x = data, y = postcodes.shape[, c("plz", "geometry")], by = "plz")
+  result <- left_join(x = data, y = postcodes.shape[, c("plz", "geometry")], by = "plz")
   
+ 
 }
 
 get_postcode_plot <- function(data, fill, city = NULL, year = NULL
@@ -53,8 +59,6 @@ cologne.2017 <- get_postcode_plot(data = plz2017.map, fill = "log(plz5_kba_kraft
 munich.2017 <- get_postcode_plot(data = plz2017.map, fill = "log(plz5_kba_kraft3 / plz5_ew)"
                                  , city = "München")
 
-# TODO: Unite polgons of 81248 and 81249
-
 # Map 2021 ecar registrations Cologne
 plz2021.map <- get_mapping_data(data = plz2021)
 
@@ -64,6 +68,3 @@ cologne.2021 <- get_postcode_plot(data = plz2021.map, fill = "log(plz5_kba_kraft
 # Munich
 munich.2021 <- get_postcode_plot(data = plz2021.map, fill = "log(plz5_kba_kraft3 / plz5_ew)",
                                   city = "München")
-
-
-  
