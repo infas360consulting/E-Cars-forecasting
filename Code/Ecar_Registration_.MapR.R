@@ -22,8 +22,8 @@ get_mapping_data <- function(data, postcodes.shape = postcodes
                              , fill = c("plz5_kba", "plz5_kba_kraft3")) {
   
   if (any(data$Jahr %in% 2017:2020)) {
-    unifed.postcodes <- st_union(postcodes.shape[postcodes.shape$plz %in% c("81248", "81249"), ])
-    postcodes.shape[postcodes.shape$plz == "81249", "geometry"] <- st_multipolygon(unifed.postcodes)
+    unified.postcodes <- st_union(postcodes.shape[postcodes.shape$plz %in% c("81248", "81249"), ])
+    postcodes.shape[postcodes.shape$plz == "81249", "geometry"] <- st_multipolygon(unified.postcodes)
   }
   
   data[, "plz"] <- as.character(data[, "plz"])
