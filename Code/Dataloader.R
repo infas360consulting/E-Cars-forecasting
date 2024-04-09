@@ -1,6 +1,8 @@
 # packages
 library(dplyr)
+library(sf)
 
+# functions
 right <- function(x, n) {
   substr(x, nchar(x) - n + 1, nchar(x))
 }
@@ -36,8 +38,12 @@ read_data <- function(year) {
   result
 }
 
+# read infas360 data
 plz2017 <- read_data("2017")
 plz2018 <- read_data("2018")
 plz2019 <- read_data("2019")
 plz2020 <- read_data("2020")
 plz2021 <- read_data("2021")
+
+# Read shape-file of german postcodes
+postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")
