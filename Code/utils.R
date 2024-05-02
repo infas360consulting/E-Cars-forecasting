@@ -12,3 +12,15 @@ get_formula <- function(covariates, offset = NULL, target = "plz5_kba_kraft3") {
   }
   result
 }
+
+# update existing formula 
+
+get_updated_formula <- function(model.formula, cov.update) {
+  temp <- Reduce(paste, deparse(model.formula))
+  as.formula(paste(temp, cov.update[[1]], sep  = " + "))
+}
+
+#drop correlated columns
+drop_correlated_variable <- function(covariates, y, data, cutoff=0.7) {
+  covariates[abs(sapply(X = covariates, FUN = function(x) cor(x = data[, x], y = data[, y], use = "pairwise.complete.obs"))) < cutoff]
+}

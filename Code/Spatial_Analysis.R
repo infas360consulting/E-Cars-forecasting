@@ -10,8 +10,9 @@ source("./Code/Dataloader.R") # read infas data, german postcode shape file
 source("./Code/utils.R") # read auxiliary functions
 
 # neighbour matrix W
-W <- st_touches(postcodes, sparse = FALSE)
+W <- st_intersects(postcodes, sparse = FALSE, )
 W <- apply(X = W, MARGIN = 1, FUN = function(x) as.numeric(x))
+diag(W) <- 0
 colnames(W) <- postcodes$plz
 rownames(W) <- postcodes$plz
 
