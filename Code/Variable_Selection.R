@@ -27,6 +27,9 @@ get_variable_selection <- function(data, burnin, n.sample, thin, covariates, tar
 set.seed(seed = seed)
 # Remove potential flawed covariates
 covariates <- covariates[!covariates %in% c(target, offset.variable, "jahr", "ort", "plz5_kba")]
+unique.length.covariates <- apply(X = data[, covariates], MARGIN = 2, FUN = function(x) length(unique(x)))
+covariates <- covariates[unique.length.covariates > 1]
+
 # Selection of spatio-temporal model for variable selection based empty model
 empty.model.formula <- get_formula(covariates = "1", offset = offset.variable)
 
@@ -150,4 +153,9 @@ example.covariates <- sample(columns.to.select, 5)
 
 get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = example.covariates,
                       target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024)
+
+### Final Variable Selection
+
+get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = columns.to.select,
+                       target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024)
 
