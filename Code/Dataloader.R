@@ -48,9 +48,20 @@ read_data <- function(year) {
   else {
     result <- data
   }
-  columns.numeric <- names(result)[right(names(result), 2) != "kl" & !names(result) %in% c("plz", "ort")]
-  result[, columns.numeric] <- apply(X = result[, columns.numeric], MARGIN = 2, FUN = function(x) as.numeric(x))
-  result                                   
+  columns_not_aggregate <- tolower(c("PLZ", "ORT", "Jahr", "PLZ5_REL1_KL_BRD", "PLZ5_REL2_KL_BRD",
+                                     "PLZ5_REL3_KL_BRD", "PLZ5_REL1_KL", "PLZ5_REL2_KL", "PLZ5_REL3_KL",
+                                     "PLZ5_KK_EW_KL", "PLZ5_KK_HH_KL", "PLZ5_OPNV_IDX_KL", "PLZ5_NACHFRAGE_KL"
+                                     , "PLZ5_EW_DICHTE_KL", "PLZ5_BDICHTE_KL", "PLZ5_STRUKTUR_KL", "PLZ5_SEKTOR_KL"))
+  
+  columns.numeric <- names(result)[!names(result) %in% columns_not_aggregate]
+  result[, columns.numeric] <- data.frame(apply(X = result[, columns.numeric], MARGIN = 2, FUN = function(x) as.numeric(x)))
+  result[, columns.numeric] <- data.frame(apply(X = result[, columns.numeric], MARGIN = 2, FUN = function(x) ifelse(is.na(x), mean(x, na.rm = TRUE), x)))
+  result[, intersect(names(result), columns_not_aggregate)] <- data.frame(apply(X = result[, intersect(names(result), columns_not_aggregate)], MARGIN = 2, FUN = function(x) ifelse(is.na(x), modus(x), x)))
+  if(year == as.character(2021)) {
+    result[result$plz == "81249", columns.numeric] <- colSums(result[result$plz %in% c("81249", "81248"), columns.numeric])
+    result[result$plz != "81248", ]
+  }
+  result
 }                               
 
 # read infas360 data

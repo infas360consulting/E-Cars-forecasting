@@ -27,3 +27,9 @@ drop_correlated_variable <- function(covariates, y, data, cutoff = 0.7) {
                                        covariates.temp != y]
   c(covariates.temp, covariates[!sapply(X = data[, covariates], FUN = function(x) is.numeric(x))])
 }
+
+# Calculates most frequent values in a column
+modus <- function(x) {
+  return(names(sort(table(x, useNA = "no"), decreasing = T, na.last = T)[1]))
+}
+
