@@ -13,7 +13,7 @@ read_data <- function(year) {
   #Read data
   data <- read.csv(paste("./Datasets/PLZ_",year,".csv", sep = ""), sep = ";", encoding = "latin1")
   names(data) <- tolower(names(data))
-  
+
   #Merge covariates from 2017 
   if(year %in% as.character(2018:2020)) {
     data2017 <- read.csv("./Datasets/PLZ_2017.csv", encoding = "latin1", sep = ";")
@@ -48,6 +48,8 @@ read_data <- function(year) {
   else {
     result <- data
   }
+  columns.numeric <- names(result)[right(names(result), 2) != "kl" & !names(result) %in% c("plz", "ort")]
+  result[, columns.numeric] <- apply(X = result[, columns.numeric], MARGIN = 2, FUN = function(x) as.numeric(x))
   result                                   
 }                               
 
@@ -69,6 +71,7 @@ ecars <- do.call(what = rbind, args = list(plz2017[, columns.to.select],
                                            plz2020[, columns.to.select],
                                            plz2021[, columns.to.select]))
 ecars <- ecars[order(ecars$jahr, ecars$plz), ]
+
 
 # Read shape-file of german postcodes
 postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")

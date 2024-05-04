@@ -22,11 +22,11 @@ colnames(W) <- postcodes$plz
 rownames(W) <- postcodes$plz
 
 
-get_variable_selection <- function(data, burnin, n.sample, thin, covariates, target, offset.variable, W, seed) {
+get_variable_selection <- function(data, burnin, n.sample, thin, covariates, target, offset.variable, W, seed, max.modelfits) {
 #Replicability
 set.seed(seed = seed)
 # Remove potential flawed covariates
-covariates <- covariates[!covariates %in% c(target, offset.variable, "jahr", "ort", "plz5_kba")]
+covariates <- covariates[!covariates %in% c(target, offset.variable, "jahr", "ort", "plz5_kba", "plz")]
 unique.length.covariates <- apply(X = data[, covariates], MARGIN = 2, FUN = function(x) length(unique(x)))
 covariates <- covariates[unique.length.covariates > 1]
 
@@ -70,7 +70,8 @@ if(selected.model == "ST.CARar") {
       current.model.formula <- formulas.to.try[which.min(temp.model.fit)][[1]]
       added.variable <- columns.to.choose.from[which.min(temp.model.fit)]
       columns.to.choose.from <- drop_correlated_variable(covariates = columns.to.choose.from, y = added.variable, data = data)
-      if(length(columns.to.choose.from) < 1) {
+      max.modelfits <- max.modelfits - length(unique(columns.to.choose.from))
+      if(length(columns.to.choose.from) < 1 | max.modelfits < 0) {
         is.continiue <- FALSE
       }
       
@@ -97,7 +98,8 @@ else if(selected.model == "ST.CARlinear") {
         current.model.formula <- formulas.to.try[which.min(temp.model.fit)][[1]]
         added.variable <- columns.to.choose.from[which.min(temp.model.fit)]
         columns.to.choose.from <- drop_correlated_variable(covariates = columns.to.choose.from, y = added.variable, data = data)
-        if(length(columns.to.choose.from) < 1) {
+        max.modelfits <- max.modelfits - length(unique(columns.to.choose.from))
+        if(length(columns.to.choose.from) < 1 | max.modelfits < 0) {
           is.continiue <- FALSE
         }
         
@@ -123,8 +125,9 @@ else if(selected.model == "ST.CARanova") {
       current.model.formula <- formulas.to.try[which.min(temp.model.fit)][[1]]
       added.variable <- columns.to.choose.from[which.min(temp.model.fit)]
       columns.to.choose.from <- drop_correlated_variable(covariates = columns.to.choose.from, y = added.variable, data = data)
-        
-      if(length(columns.to.choose.from) < 1) {
+      current.model.fit <- min(temp.model.fit)
+      max.modelfits <- max.modelfits - length(unique(columns.to.choose.from))
+      if(length(columns.to.choose.from) < 1 | max.modelfits < 0) {
           is.continiue <- FALSE
         }
     }
@@ -148,14 +151,28 @@ current.model.formula
 
 ### EXAMPLE:
 
-columns.to.select <- columns.to.select[!columns.to.select %in% c("plz5_kba_kraft3", "plz","plz5_kba", "ort", "jahr")]
-example.covariates <- sample(columns.to.select, 5)
-
-get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = example.covariates,
-                      target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024)
+#columns.to.select <- columns.to.select[!columns.to.select %in% c("plz5_kba_kraft3", "plz","plz5_kba", "ort", "jahr")]
+#example.covariates <- sample(columns.to.select, 20)
+#
+#get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = example.covariates,
+#                      target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024, max.modelfits = 25)
 
 ### Final Variable Selection
 
-get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = columns.to.select,
-                       target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024)
+#selection.result <- get_variable_selection(data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, covariates = columns.to.select,
+#                       target = "plz5_kba_kraft3", offset.variable = "plz5_hh", W = W, seed = 2024, max.modelfits = 1000)
+#
 
+selected.model <- as.formula(plz5_kba_kraft3 ~ 1 + offset(log(plz5_hh)) + plz5_selbst + plz5_kk_ew + 
+ plz5_solar + plz5_ew_m + plz5_anz_firm_g + plz5_hh_eink_kl4 + 
+  plz5_str_typ1 + plz5_wfl_kl2 + plz5_grundfl_kl5 + plz5_eauto_score2)
+
+#M <- ST.CARar(formula = selection.result, family = "poisson", data = ecars_variable_selection, W = W, burnin = 20000, n.sample = 100000, thin = 100, AR = 1)
+#coef(M)
+#M
+
+M2 <- ST.CARar(formula = selected.model, family = "poisson", data = ecars_variable_selection, W = W, burnin = 20000, n.sample = 100000, thin = 100, AR = 1)
+M2
+
+M3 <- ST.CARadaptive(formula = selected.model, family = "poisson", data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, W = W)
+coef(M3)
