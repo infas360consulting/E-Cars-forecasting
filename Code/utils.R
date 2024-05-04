@@ -21,6 +21,9 @@ get_updated_formula <- function(model.formula, cov.update) {
 }
 
 #drop correlated columns
-drop_correlated_variable <- function(covariates, y, data, cutoff=0.7) {
-  covariates[abs(sapply(X = covariates, FUN = function(x) cor(x = data[, x], y = data[, y], use = "pairwise.complete.obs"))) < cutoff]
+drop_correlated_variable <- function(covariates, y, data, cutoff = 0.7) {
+  covariates.temp <- covariates[sapply(X = data[, covariates], FUN = function(x) is.numeric(x))]
+  covariates.temp <- covariates.temp[abs(sapply(X = covariates.temp, FUN = function(x) cor(x = data[, x], y = data[, y], use = "pairwise.complete.obs"))) < cutoff &
+                                       covariates.temp != y]
+  c(covariates.temp, covariates[!sapply(X = data[, covariates], FUN = function(x) is.numeric(x))])
 }
