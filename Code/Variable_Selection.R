@@ -21,6 +21,10 @@ diag(W) <- 0
 colnames(W) <- postcodes$plz
 rownames(W) <- postcodes$plz
 
+#Test for Munich Model
+W_M <- W[which(substr(rownames(W), 1,1) == "8"), which(substr(rownames(W), 1,1) == "8")]
+ecars_M <- ecars[ecars$ort == "München", ]
+
 
 get_variable_selection <- function(data, burnin, n.sample, thin, covariates, target, offset.variable, W, seed, max.modelfits) {
 #Replicability
@@ -174,5 +178,19 @@ selected.model <- as.formula(plz5_kba_kraft3 ~ 1 + offset(log(plz5_hh)) + plz5_s
 M2 <- ST.CARar(formula = selected.model, family = "poisson", data = ecars_variable_selection, W = W, burnin = 20000, n.sample = 100000, thin = 100, AR = 1)
 M2
 
-M3 <- ST.CARadaptive(formula = selected.model, family = "poisson", data = ecars_variable_selection, burnin = 20000, n.sample = 100000, thin = 100, W = W)
+M3 <- ST.CARadaptive(formula = selected.model, family = "poisson", data = ecars, burnin = 20000, n.sample = 100000, thin = 100, W = W)
 coef(M3)
+
+M4 <- ST.CARar(formula = plz5_kba_kraft3 ~ plz5_solar, family = "poisson", data = ecars_M, burnin = 20000, n.sample = 100000, thin = 100, W = W_M, AR = 1)
+coef(M4)
+M4
+
+M5 <- glm(formula = get_updated_formula(selected.model, "ort"), family = "poisson", data = ecars)
+summary(M5)
+coef(M5)
+
+M6 <- ST.CARar(formula = get_updated_formula(selected.model, "ort"), family = "poisson", data = ecars_variable_selection, W = W, burnin = 20000, n.sample = 100000, thin = 100, AR = 1)
+M6
+
+coef(M5)
+coef(M6)
