@@ -8,11 +8,24 @@ right <- function(x, n) {
   substr(x, nchar(x) - n + 1, nchar(x))
 }
 
-
 read_data <- function(year) {
   #Read data
   data <- read.csv(paste("./Datasets/PLZ_",year,".csv", sep = ""), sep = ";", encoding = "latin1")
   names(data) <- tolower(names(data))
+  # Charging infrastructure 
+  # TODO: Ilija Anpassung senden Excel-Datei
+  charging_infrastructure <- read.xlsx("./Datasets/Ladesaeulenregister.xlsx", startRow = 11, detectDates = TRUE)
+  names(charging_infrastructure) <- tolower(names(charging_infrastructure))
+  charging_infrastructure$jahr <- as.numeric(substr(charging_infrastructure$datum, 7, 10))
+  chargingcolumn <- charging_infrastructure[charging_infrastructure$jahr <= as.numeric(year), ] %>% group_by(postleitzahl) %>% tally(name = "plz5_ladesaeulen")
+  chargingpoint <- charging_infrastructure[charging_infrastructure$jahr <= as.numeric(year), ] %>% group_by(postleitzahl) %>% summarise(plz5_ladepunkte = sum(anzahl.ladepunkte))
+  chargingpoints <- left_join(chargingcolumn, chargingpoint, c("postleitzahl"))                                                                                                                                      
+                                                                                                                                                           
+  data$plz <- as.character(data$plz)
+  data <- left_join(data, chargingpoints, by = c("plz" = "postleitzahl"))
+  data$plz5_ladepunkte <- ifelse(is.na(data$plz5_ladepunkte), 0, data$plz5_ladepunkte)
+  data$plz5_ladesaeulen <- ifelse(is.na(data$plz5_ladesaeulen), 0, data$plz5_ladesaeulen)
+  
 
   #Merge covariates from 2017 
   if(year %in% as.character(2018:2020)) {
@@ -61,7 +74,7 @@ read_data <- function(year) {
     result[result$plz == "81249", columns.numeric] <- colSums(result[result$plz %in% c("81249", "81248"), columns.numeric])
     result[result$plz != "81248", ]
   }
-  result
+  result <- result %>% arrange(desc(plz))
 }                               
 
 # read infas360 data
@@ -74,7 +87,7 @@ plz2021 <- read_data("2021")
 # create spatio-temporal dataset
 df_quality_check_2017 <- read.xlsx("./Datasets/DataQualityCheck.xlsx", sheet = "2017")
 columns.wappelhorst <- df_quality_check_2017$column[!is.na(df_quality_check_2017$category)]
-columns.to.select <- c("plz5_kba_kraft3","plz","plz5_kba", "ort", "jahr", columns.wappelhorst)
+columns.to.select <- c("plz5_kba_kraft3","plz","plz5_kba", "ort", "jahr","plz5_ladepunkte", "plz5_ladesaeulen", columns.wappelhorst)
 columns.to.select <- intersect(columns.to.select, intersect(names(plz2017), names(plz2021)))
 ecars <- do.call(what = rbind, args = list(plz2017[, columns.to.select],
                                            plz2018[, columns.to.select],
@@ -82,7 +95,7 @@ ecars <- do.call(what = rbind, args = list(plz2017[, columns.to.select],
                                            plz2020[, columns.to.select],
                                            plz2021[, columns.to.select]))
 ecars <- ecars[order(ecars$jahr, ecars$plz), ]
-
+ecars <- ecars %>% relocate(c("plz5_ew", "plz5_hh"), .after = "plz") %>% relocate(c("plz", "jahr"), .before = "plz5_kba_kraft3")
 
 # Read shape-file of german postcodes
 postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")

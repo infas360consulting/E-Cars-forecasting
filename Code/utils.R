@@ -17,7 +17,7 @@ get_formula <- function(covariates, offset = NULL, target = "plz5_kba_kraft3") {
 
 get_updated_formula <- function(model.formula, cov.update) {
   temp <- Reduce(paste, deparse(model.formula))
-  as.formula(paste(temp, cov.update[[1]], sep  = " + "))
+  as.formula(paste(temp, paste(cov.update, collapse = " + "), sep  = " + "))
 }
 
 #drop correlated columns

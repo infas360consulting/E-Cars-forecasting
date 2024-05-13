@@ -42,7 +42,7 @@ DataQuality2017 <- data_quality(df = plz2017[, -c(1,2)])
 
 # Correlation analysis between different years of target variable
 
-ecars <- lapply(paste("./Datasets/PLZ_", 2017:2021,".csv", sep = ""), function(x) as.data.frame(read.csv(x, sep = ";", encoding = "latin1")[, c("plz", "plz5_kba_kraft3")]))
+ecars <- lapply(paste("./Datasets/PLZ_", 2017:2021,".csv", sep = ""), function(x) as.data.frame(read.csv(x, sep = ";", encoding = "latin1")[, c("plz", "plz5_kba_kraft3")]) %>% arrange(desc(plz)))
 ecars <- ecars %>% reduce(left_join, by = "plz")
 names(ecars)[-1] <- paste("plz5_kba_kraft3_", 2017:2021, sep = "")
 
@@ -50,9 +50,10 @@ correlation_matrix <- cor(ecars[, names(ecars) != "plz"])
 
 p_corr <- ggcorrplot(correlation_matrix)
 p_corr
+ggsave("./Ecars/Correlation_Plot_Target.jpeg")
 # Time series analysis of the target variable
 
-ecars <- lapply(2017:2021, FUN=function(x) data.frame(read.csv(paste("./Datasets/PLZ_", x, ".csv", sep = ""), sep = ";", encoding = "latin1")[, c("plz","plz5_kba_kraft3")], jahr=x))
+ecars <- lapply(2017:2021, FUN=function(x) data.frame(read.csv(paste("./Datasets/PLZ_", x, ".csv", sep = ""), sep = ";", encoding = "latin1")[, c("plz","plz5_kba_kraft3")], jahr=x) %>% arrange(desc(plz)))
 ecars <- do.call(rbind.data.frame, ecars)
 ecars$jahr <- factor(ecars$jahr, levels = as.character(2017:2021))
 ecars$plz <- factor(ecars$plz)
