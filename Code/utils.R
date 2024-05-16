@@ -1,3 +1,9 @@
+#packages
+library(dplyr)
+library(CARBayesST)
+library(matrixStats)
+
+
 # generates formula for glm-function
 get_formula <- function(covariates, offset = NULL, target = "plz5_kba_kraft3") {
   
@@ -33,3 +39,18 @@ modus <- function(x) {
   return(names(sort(table(x, useNA = "no"), decreasing = T, na.last = T)[1]))
 }
 
+# Predict function
+ST.CARar.Predict <- function(is.forecast, formula, target.variable = "plz5_kba_kraft3", data, W, burnin, n.sample, thin, n.chains, seed = 2024) {
+  # Reproducible
+  set.seed(seed)
+  # create resulting data frame
+  fitting_data <- data %>% mutate(!!target.variable := ifelse(is.forecast, NA, .data[[target.variable]]))
+  model_pred <- ST.CARar(formula = formula, family = "poisson", data = fitting_data, W = W, burnin = burnin, n.sample = n.sample, thin = thin, n.chains = n.chains, AR = 1)
+  if(n.chains == 1) {
+    predictions <- ifelse(is.forecast, model_pred$samples$Y, model_pred$fitted.values)
+  }
+  else {
+    predictions <- ifelse(is.forecast, rowMeans(sapply(seq_len(n.chains), FUN = function(x) colMedians(model_pred$samples$Y[[x]]))), model_pred$fitted.values)
+  }
+  predictions
+}

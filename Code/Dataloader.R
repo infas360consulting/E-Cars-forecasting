@@ -73,6 +73,7 @@ read_data <- function(year) {
   if(year == as.character(2021)) {
     result[result$plz == "81249", columns.numeric] <- colSums(result[result$plz %in% c("81249", "81248"), columns.numeric])
     result[result$plz != "81248", ]
+    names(result)[names(result) %in% tolower(c("PLZ5_GEBTYP_PRIV1", "PLZ5_GEBTYP_PRIV8"))] <- tolower(c("PLZ5_BASISTYP1", "PLZ5_BASISTYP6"))
   }
   result <- result %>% arrange(desc(plz))
 }                               
@@ -87,7 +88,7 @@ plz2021 <- read_data("2021")
 # create spatio-temporal dataset
 df_quality_check_2017 <- read.xlsx("./Datasets/DataQualityCheck.xlsx", sheet = "2017")
 columns.wappelhorst <- df_quality_check_2017$column[!is.na(df_quality_check_2017$category)]
-columns.to.select <- c("plz5_kba_kraft3","plz","plz5_kba", "ort", "jahr","plz5_ladepunkte", "plz5_ladesaeulen", columns.wappelhorst)
+columns.to.select <- c("plz5_kba_kraft3","plz","plz5_kba", "ort", "jahr","plz5_ladepunkte", "plz5_ladesaeulen", "plz5_flaeche", "plz5_basistyp1", "plz5_basistyp6", columns.wappelhorst)
 columns.to.select <- intersect(columns.to.select, intersect(names(plz2017), names(plz2021)))
 ecars <- do.call(what = rbind, args = list(plz2017[, columns.to.select],
                                            plz2018[, columns.to.select],
