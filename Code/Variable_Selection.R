@@ -100,5 +100,3 @@ cor(ecars_K_forecasting[is.forecast, c("plz5_kba_kraft3", "forecast")])
 ## Munich
 selected.model.munich <- get_variable_selection2(data = ecars_M[ecars_M$jahr %in% training, ], covariates = columns.to.select, target = "plz5_kba_kraft3", offset.variable = "plz5_ew", seed = 2024, max.modelfits = 700)
 ST.Munich <- ST.CARar(formula = selected.model.munich$formula, family = "poisson", data = ecars_M, W = W_M, burnin = 20000, n.sample = 300000, thin = 100, AR = 1, n.chains = 30)
-
-plot(ecars_K[ecars_K$jahr == "2021", c("plz5_kba_kraft3", "forecast")])
