@@ -91,7 +91,7 @@ ST.Cologne <- ST.CARar(formula = selected.model.cologne$formula, family = "poiss
 ecars_K_forecasting <- ecars_K[ecars_K$jahr %in% as.character(2019:2021), ]
 to.forecast <- as.character(2021)
 is.forecast <- ecars_K_forecasting$jahr %in% to.forecast
-ecars_K_forecasting$forecast <- ST.CARar.Predict(is.forecast = is.forecast, formula = selected.model.cologne, data = ecars_K_forecasting, W = W_K, burnin = 20000, n.sample = 500000, thin = 100, n.chains = 30, seed = 2024)
+ecars_K_forecasting$forecast <- ST.CARar.Predict(is.forecast = is.forecast, formula = selected.model.cologne, data = ecars_K_forecasting, W = W_K, burnin = 20000, n.sample = 500000, thin = 100, n.chains = 100, seed = 2024)
 ecars_K_forecasting <- ecars_K_forecasting %>% relocate("forecast", .after = "plz5_kba_kraft3") %>% relocate(c("plz5_ladesaeulen", "plz5_ew_18u30_w", "plz5_firm_ums_kl9", "plz5_wfl_kl1"), .after = "forecast")
 
 #Performance
