@@ -6,6 +6,7 @@ library(dplyr)
 library(openxlsx)
 library(tidyverse)
 library(sf)
+library(gridExtra)
 
 
 # Datasets
@@ -18,30 +19,30 @@ postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")
 
 # functions
 
-get_mapping_data <- function(data, postcodes.shape = postcodes
-                             , fill = c("plz5_kba", "plz5_kba_kraft3")) {
+get_mapping_data <- function(data, postcodes.shape = postcodes, city = "München") {
   
-  if (any(data$jahr %in% 2017:2020)) {
-    unified.postcodes <- st_union(postcodes.shape[postcodes.shape$plz %in% c("81248", "81249"), ])
-    postcodes.shape[postcodes.shape$plz == "81249", "geometry"] <- st_multipolygon(unified.postcodes)
+  if (city == "München") {
+    data[, "plz"] <- as.character(data[, "plz"])
+    result <- left_join(postcodes.shape[substr(postcodes.shape$plz, 1, 1) == "8", c("plz", "geometry")], data, "plz")
   }
-  
-  data[, "plz"] <- as.character(data[, "plz"])
-  data <- data[, c("plz", "plz5_ew", "ort", "jahr", "plz5_hh",fill)]
-  result <- left_join(x = data, y = postcodes.shape[, c("plz", "geometry")], by = "plz")
+  else if (city == "Köln") {
+    data[, "plz"] <- as.character(data[, "plz"])
+    result <- left_join(postcodes.shape[substr(postcodes.shape$plz, 1, 1) == "5", c("plz", "geometry")], data, "plz")
+  }
   result
 }
 
 get_postcode_plot <- function(data, fill, city = NULL, year = NULL
                               , title = NULL, subtitle = NULL) {
   
-  ggplot(data = data[data[, "ort"] %in% city, ]) +
+  ggplot(data = data[data$jahr %in% year, ]) +
     geom_sf(aes_string(fill = fill, geometry = "geometry")) +
     theme(axis.line = element_blank(),
           axis.text = element_blank(),
           axis.ticks = element_blank(),
           panel.background = element_blank(),
           legend.position = "bottom") +
+    scale_fill_viridis_c(option = "magma") +
     labs(fill = element_blank(), title = title, subtitle = subtitle)
   
   # TODO: customize legend
@@ -142,3 +143,41 @@ map.procedure$path <- paste("./Ecars", map.procedure$title, map.procedure$export
 # Export files
 
 #mapply(plots = p, path = map.procedure$path, FUN = function(plots, path) ggsave(filename = path, plot = plots))
+
+### Create Forecast Maps
+## Cologne 2021
+minium.cologne.forecast <- min(c(ecars_K_forecasting$forecast[ecars_K_forecasting$jahr %in% c("2021")], ecars_K_forecasting$plz5_kba_kraft3[ecars_K_forecasting$jahr %in% c("2021")]))
+median.cologne.forecast <- mean(c(ecars_K_forecasting$forecast[ecars_K_forecasting$jahr %in% c("2021")], ecars_K_forecasting$plz5_kba_kraft3[ecars_K_forecasting$jahr %in% c("2021")]))
+maximum.cologne.forecast <- max(c(ecars_K_forecasting$forecast[ecars_K_forecasting$jahr %in% c("2021")], ecars_K_forecasting$plz5_kba_kraft3[ecars_K_forecasting$jahr %in% c("2021")]))
+
+midpoint.cologne <- round((maximum.cologne.forecast - minium.cologne.forecast) / 2 + minium.cologne.forecast, -2)
+
+cologne.map <- get_mapping_data(data = ecars_K_forecasting, city = "Köln")
+cologne.2021.forecast <- get_postcode_plot(data = cologne.map, fill = "forecast", city = "Köln", year = "2021")
+cologne.2021.forecast <- cologne.2021.forecast + scale_fill_viridis_c(limits = c(minium.cologne.forecast, maximum.cologne.forecast), breaks = c(midpoint.cologne - 2000, midpoint.cologne, midpoint.cologne + 2000))
+
+cologne.2021.label <- get_postcode_plot(data = cologne.map, fill = "plz5_kba_kraft3", city = "Köln", year = "2021")
+cologne.2021.label <- cologne.2021.label + scale_fill_viridis_c(limits = c(minium.cologne.forecast, maximum.cologne.forecast), breaks = c(midpoint.cologne - 2000, midpoint.cologne, midpoint.cologne + 2000))
+
+cologne.final.2021 <- grid.arrange(cologne.2021.label, cologne.2021.forecast, nrow = 1, ncol = 2)
+ggsave(plot = cologne.final.2021, "./Ecars/Cologne2021.jpeg")
+
+## Munich 2021
+minium.munich.forecast <- min(c(ecars_M_forecasting$forecast[ecars_M_forecasting$jahr %in% c("2021")], ecars_M_forecasting$plz5_kba_kraft3[ecars_M_forecasting$jahr %in% c("2021")]))
+median.munich.forecast <- mean(c(ecars_M_forecasting$forecast[ecars_M_forecasting$jahr %in% c("2021")], ecars_M_forecasting$plz5_kba_kraft3[ecars_M_forecasting$jahr %in% c("2021")]))
+maximum.munich.forecast <- max(c(ecars_M_forecasting$forecast[ecars_M_forecasting$jahr %in% c("2021")], ecars_M_forecasting$plz5_kba_kraft3[ecars_M_forecasting$jahr %in% c("2021")]))
+
+midpoint.munich <- round((maximum.munich.forecast - minium.munich.forecast) / 2 + minium.munich.forecast, -2)
+
+
+munich.map <- get_mapping_data(data = ecars_M_forecasting, city = "München")
+munich.map <- munich.map %>% mutate(jahr = ifelse(is.na(jahr), "2021", jahr)) %>% unique()
+munich.2021.forecast <- get_postcode_plot(data = munich.map, fill = "forecast", city = "München", year = "2021")
+munich.2021.forecast <- munich.2021.forecast + scale_fill_viridis_c(option = "magma",limits = c(minium.munich.forecast, maximum.munich.forecast), breaks = c(midpoint.munich - 700, midpoint.munich, midpoint.munich + 700))
+
+munich.2021.label <- get_postcode_plot(data = munich.map, fill = "plz5_kba_kraft3", city = "München", year = "2021")
+munich.2021.label <- munich.2021.label + scale_fill_viridis_c( option = "magma",limits = c(minium.munich.forecast, maximum.munich.forecast), breaks = c(midpoint.munich - 700, midpoint.munich, midpoint.munich + 700))
+
+munich.final.2021 <- ggarrange(munich.2021.label, munich.2021.forecast, nrow = 1, ncol = 2)
+
+ggsave(plot = munich.final.2021, "./Ecars/Munich2021.jpeg")

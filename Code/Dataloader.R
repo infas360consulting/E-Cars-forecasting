@@ -2,6 +2,7 @@
 library(dplyr)
 library(sf)
 library(openxlsx)
+library(spind)
 
 # functions
 right <- function(x, n) {
@@ -96,7 +97,28 @@ ecars <- do.call(what = rbind, args = list(plz2017[, columns.to.select],
                                            plz2020[, columns.to.select],
                                            plz2021[, columns.to.select]))
 ecars <- ecars[order(ecars$jahr, ecars$plz), ]
-ecars <- ecars %>% relocate(c("plz5_ew", "plz5_hh"), .after = "plz") %>% relocate(c("plz", "jahr"), .before = "plz5_kba_kraft3")
+ecars_outlier <- ecars %>% group_by(ort, jahr) %>% summarise(median = median(plz5_kba_kraft3 / plz5_ew),
+                                            lower.quartil = quantile(plz5_kba_kraft3 / plz5_ew, 0.25),
+                                            upper.quartil = quantile(plz5_kba_kraft3 / plz5_ew, 0.75),
+                                            interquartil.distance = 1.50 * (upper.quartil - lower.quartil),
+                                            outlier.treshold = upper.quartil + interquartil.distance)
+
+ecars <- left_join(ecars, ecars_outlier, c("ort", "jahr"))
+ecars <- ecars %>% mutate(is.outlier = ifelse(plz5_kba_kraft3 / plz5_ew > outlier.treshold, TRUE, FALSE),
+                          plz5_ew_18u30_w_ant = plz5_ew_18u30_w * 100/ plz5_ew)
+ecars <- ecars %>% relocate(c("plz","ort", "jahr", "plz5_kba_kraft3", "plz5_ew", "is.outlier"))
+
+columns.to.select <- c(columns.to.select, "plz5_ew_18u30_w_ant")
+
+# Ecars arima data
+ecars$jahr <- as.numeric(ecars$jahr)
+ecars_arima <- ecars[ecars$jahr > min(ecars$jahr), ]
+ecars_arima$vorjahr <- as.character(ecars_arima$jahr - 1)
+ecars$jahr <- as.character(ecars$jahr)
+ecars_arima <- left_join(ecars_arima, ecars[, c("plz", "plz5_kba_kraft3", "jahr")], by = c("plz"="plz", "vorjahr"="jahr"), suffix = c("","_vorjahr"))
+ecars_arima$plz5_kba_kraft3_diff <- ecars_arima$plz5_kba_kraft3 - ecars_arima$plz5_kba_kraft3_vorjahr
+ecars_arima <- ecars_arima %>% relocate(c("plz5_kba_kraft3_vorjahr","plz5_kba_kraft3", "plz5_kba_kraft3_diff"), .after = "ort")
+
 
 # Read shape-file of german postcodes
 postcodes <- st_read(dsn = "./Datasets/plz-5stellig/plz-5stellig.shp")

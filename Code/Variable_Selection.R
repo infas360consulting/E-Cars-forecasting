@@ -91,12 +91,25 @@ ST.Cologne <- ST.CARar(formula = selected.model.cologne$formula, family = "poiss
 ecars_K_forecasting <- ecars_K[ecars_K$jahr %in% as.character(2019:2021), ]
 to.forecast <- as.character(2021)
 is.forecast <- ecars_K_forecasting$jahr %in% to.forecast
-ecars_K_forecasting$forecast <- ST.CARar.Predict(is.forecast = is.forecast, formula = selected.model.cologne, data = ecars_K_forecasting, W = W_K, burnin = 20000, n.sample = 500000, thin = 100, n.chains = 100, seed = 2024)
+rho.S <- tail(ST.Cologne$summary.results, 2)[[1]]
+rho.T <- tail(ST.Cologne$summary.results, 2)[[2]]
+ecars_K_forecasting$forecast <- ST.CARar.Predict(is.forecast = is.forecast, formula = selected.model.cologne, data = ecars_K_forecasting, W = W_K, burnin = 20000, n.sample = 500000, thin = 100, n.chains = 100, seed = 2024, rho.S = rho.S, rho.T = rho.T )
 ecars_K_forecasting <- ecars_K_forecasting %>% relocate("forecast", .after = "plz5_kba_kraft3") %>% relocate(c("plz5_ladesaeulen", "plz5_ew_18u30_w", "plz5_firm_ums_kl9", "plz5_wfl_kl1"), .after = "forecast")
 
 #Performance
 cor(ecars_K_forecasting[is.forecast, c("plz5_kba_kraft3", "forecast")])
 
 ## Munich
+munich.outliers <- unique(ecars_M$plz[ecars_M$is.outlier])
+ecars_M <- ecars_M[!ecars_M$plz %in% munich.outliers, ]
+
 selected.model.munich <- get_variable_selection2(data = ecars_M[ecars_M$jahr %in% training, ], covariates = columns.to.select, target = "plz5_kba_kraft3", offset.variable = "plz5_ew", seed = 2024, max.modelfits = 700)
 ST.Munich <- ST.CARar(formula = selected.model.munich$formula, family = "poisson", data = ecars_M, W = W_M, burnin = 20000, n.sample = 300000, thin = 100, AR = 1, n.chains = 30)
+
+#Forecasting
+ecars_M_forecasting <- ecars_M[ecars_M$jahr %in% as.character(2019:2021), ]
+to.forecast <- as.character(2021)
+is.forecast <- ecars_M_forecasting$jahr %in% to.forecast
+ecars_M_forecasting$forecast <- ST.CARar.Predict(is.forecast = is.forecast, formula = selected.model.munich, data = ecars_M_forecasting, W = W_M_adj, burnin = 20000, n.sample = 500000, thin = 100, n.chains = 100, seed = 2024)
+ecars_M_forecasting <- ecars_M_forecasting %>% relocate("forecast", .after = "plz5_kba_kraft3") %>% relocate(c("is.outlier","plz5_ladesaeulen", "plz5_ew_18u30_w", "plz5_firm_ums_kl9", "plz5_wfl_kl1"), .after = "forecast")
+
